@@ -5,6 +5,8 @@ author: support@senzing.com
 inputs:
   analyze-core-dumps:
     description: Run analysis and upload core dump after running build/test.
+  core-file-suffix:
+    description: Suffix for core dump artifact names
   enable-core-dumps:
     description: Enable core dumps on a system before running build/test.
 

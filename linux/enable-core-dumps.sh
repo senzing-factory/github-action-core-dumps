@@ -6,11 +6,18 @@ echo "[INFO] enable linux core dumps"
 sudo mkdir -p /tmp/coredumps
 sudo chmod 1777 /tmp/coredumps
 
-# Set unlimited core dump size
+# Set unlimited core dump size globally
+echo "* soft core unlimited" | sudo tee -a /etc/security/limits.conf
+echo "* hard core unlimited" | sudo tee -a /etc/security/limits.conf
+
+# Also set for current session
 ulimit -c unlimited
 
 # Configure core dump pattern to use specific directory
 echo "/tmp/coredumps/core.%e.%p.%t" | sudo tee /proc/sys/kernel/core_pattern
+
+# Export to GITHUB_ENV so it persists
+echo "ULIMIT_CORE=unlimited" >> "$GITHUB_ENV"
 
 # Verify settings
 echo "[INFO] Core dump settings:"
