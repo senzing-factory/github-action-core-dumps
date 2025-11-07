@@ -32,6 +32,10 @@ jobs:
         os: [ubuntu-latest, macos-latest]
 
     steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
       - name: Enable core dumps
         uses: senzing-factory/github-action-core-dumps@v1
         with:
