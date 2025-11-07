@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -ex
 
 echo "[INFO] enable linux core dumps"
 # Create core dump directory

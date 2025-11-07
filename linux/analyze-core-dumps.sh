@@ -2,8 +2,8 @@
 set -e
 
 # Install Python debug symbols and GDB
-sudo apt-get update
-sudo apt-get install -y python3-dbg gdb
+sudo apt-get -q update
+sudo apt-get install -yq python3-dbg gdb
 
 # Find core dump
 CORE_FILE=$(find /tmp/coredumps -maxdepth 1 -type f -regex '.*/core\.[^.]+\.[0-9]+\.[0-9]+' -newer /tmp/core_dump_start_marker)
