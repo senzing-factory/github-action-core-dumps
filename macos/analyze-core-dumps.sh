@@ -47,25 +47,36 @@ if [ -n "$CORE_FILE" ]; then
   
   echo "[INFO] Analyzing core dump with executable: $EXEC_PATH"
   
-  # Detect executable type
+  # Detect executable type by actually examining the binary
   EXEC_TYPE="native"
-  if [[ "$EXEC_PATH" == *"python"* ]] || [[ "$EXEC_PATH" == *"Python"* ]] || file "$EXEC_PATH" | grep -q "Python"; then
+  if [[ "$EXEC_PATH" == *"python"* ]] || [[ "$EXEC_PATH" == *"Python"* ]]; then
     EXEC_TYPE="python"
-  elif file "$EXEC_PATH" | grep -q "Go " || [[ "$PROG_NAME" == "segfault" && -f "${GITHUB_WORKSPACE}/test/segfault.go" ]]; then
-    EXEC_TYPE="go"
+  elif [ -f "$EXEC_PATH" ]; then
+    # Check the actual binary contents
+    FILE_OUTPUT=$(file "$EXEC_PATH" 2>/dev/null)
+    if echo "$FILE_OUTPUT" | grep -q "Python"; then
+      EXEC_TYPE="python"
+    elif echo "$FILE_OUTPUT" | grep -q "Go "; then
+      EXEC_TYPE="go"
+    # Check for Go-specific strings in the binary
+    elif strings "$EXEC_PATH" 2>/dev/null | grep -q "^go1\.[0-9]"; then
+      EXEC_TYPE="go"
+    fi
   fi
   
   echo "[INFO] Detected executable type: $EXEC_TYPE"
   
-  # Check if Go is available (needed for go install)
-  if command -v go &> /dev/null; then
-    if ! command -v dlv &> /dev/null; then
-      echo "[INFO] Installing delve for Go analysis"
-      go install github.com/go-delve/delve/cmd/dlv@latest
-      export PATH="$HOME/go/bin:$PATH"
+  # Only install delve if we detected Go
+  if [ "$EXEC_TYPE" == "go" ]; then
+    if command -v go &> /dev/null; then
+      if ! command -v dlv &> /dev/null; then
+        echo "[INFO] Installing delve for Go analysis"
+        go install github.com/go-delve/delve/cmd/dlv@latest
+        export PATH="$HOME/go/bin:$PATH"
+      fi
+    else
+      echo "[WARN] Go not found, skipping delve installation"
     fi
-  else
-    echo "[WARN] Go not found, skipping delve installation"
   fi
   
   # Analyze based on type
@@ -90,7 +101,7 @@ if [ -n "$CORE_FILE" ]; then
       if command -v dlv &> /dev/null && [ -f "$EXEC_PATH" ]; then
         echo "[INFO] Using delve for enhanced Go analysis"
         printf '%s\n' "goroutines" "bt" "exit" | \
-          dlv core "$EXEC_PATH" "$CORE_FILE" --check-go-version=false >> backtrace.txt 2>&1
+          dlv core "$EXEC_PATH" "$CORE_FILE" --check-go-version=false >> backtrace.txt 2>&1 || true
       fi
       ;;
       
