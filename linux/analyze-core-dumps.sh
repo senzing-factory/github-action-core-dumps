@@ -79,7 +79,7 @@ if [ -n "$CORE_FILE" ]; then
     if command -v go &> /dev/null; then
       if ! command -v dlv &> /dev/null; then
         echo "[INFO] Installing delve for Go analysis"
-        go install github.com/go-delve/delve/cmd/dlv@latest
+        go install github.com/go-delve/delve/cmd/dlv@latest > /dev/null 2>&1 || echo "[WARN] Failed to install delve"
         export PATH="$HOME/go/bin:$PATH"
       fi
     else
@@ -125,6 +125,8 @@ if [ -n "$CORE_FILE" ]; then
   esac
 
   echo "[INFO] Backtrace analysis complete"
+  echo "[INFO] Backtrace output:"
+  cat backtrace.txt
 else
   echo "[INFO] No core dump found"
   echo "[INFO] Checking system limits:"
