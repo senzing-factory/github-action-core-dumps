@@ -15,15 +15,15 @@ runs:
       name: Run on Linux
       uses: senzing-factory/github-action-core-dumps/linux@2-skern
       with:
-        analyze-core-dumps: ${{ inputs.analyze-core-dumps }}
-        enable-core-dumps: ${{ inputs.senzingsdk-repository }}
+        analyze-core-dumps: "${{ inputs.analyze-core-dumps }}"
+        enable-core-dumps: "${{ inputs.senzingsdk-repository }}"
 
     - if: runner.os == 'macOS'
       name: Run on macOS
       uses: senzing-factory/github-action-core-dumps/macos@2-skern
       with:
-        analyze-core-dumps: ${{ inputs.analyze-core-dumps }}
-        enable-core-dumps: ${{ inputs.senzingsdk-repository-path }}
+        analyze-core-dumps: "${{ inputs.analyze-core-dumps }}"
+        enable-core-dumps: "${{ inputs.senzingsdk-repository-path }}"
 
 branding:
   icon: bug
