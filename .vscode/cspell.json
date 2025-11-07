@@ -6,6 +6,9 @@
     "buildx",
     "CCLA",
     "CODEOWNER",
+    "coredump",
+    "coredumps",
+    "corefile",
     "dockerhub",
     "dorny",
     "esac",
@@ -20,6 +23,7 @@
     "MYPY",
     "pipx",
     "Pylint",
+    "pytest",
     "redoer",
     "Senzing",
     "senzingapi",
@@ -28,7 +32,10 @@
     "signingkey",
     "stackoverflow",
     "testcoverage",
+    "venv",
     "vladopajic"
   ],
-  "ignorePaths": [".git/**"]
+  "ignorePaths": [
+    ".git/**"
+  ]
 }

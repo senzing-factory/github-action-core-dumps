@@ -1,0 +1,42 @@
+name: Core Dumps - linux
+description: Enable or analyze and upload core dumps on the linux platform.
+author: support@senzing.com
+
+inputs:
+  analyze-core-dumps:
+    description: Run analysis and upload core dump after running build/test.
+  enable-core-dumps:
+    description: Enable core dumps on a system before running build/test.
+
+runs:
+  using: composite
+  steps:
+    # Install staging, production or versioned release.
+    - env:
+        ENABLE_CORE_DUMPS: ${{ inputs.enable-core-dumps }}
+      if: ${{ inputs.enable-core-dumps  == 'true' }}
+      name: Enable Core Dumps
+      shell: bash
+      run: ${{ github.action_path }}/enable-core-dumps.sh
+
+    - env:
+        ANALYZE_CORE_DUMPS: ${{ inputs.analyze-core-dumps }}
+      if: ${{ always() && inputs.analyze-core-dumps == 'true' }}
+      name: Analyze Core Dumps
+      shell: bash
+      run: ${{ github.action_path }}/analyze-core-dumps.sh
+
+    - if: ${{ always() && inputs.analyze-core-dumps == 'true' }}
+      name: Upload Core Dumps
+      uses: actions/upload-artifact@v4
+      with:
+        if-no-files-found: ignore
+        name: core-dump-analysis-${{ inputs.core-file-suffix }}
+        path: |
+          /tmp/coredumps/core.*
+          /cores/core.*
+          backtrace.txt
+
+branding:
+  icon: bug
+  color: green

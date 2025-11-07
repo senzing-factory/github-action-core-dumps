@@ -1,0 +1,29 @@
+name: core dump test
+
+on: [push]
+
+jobs:
+  core-dump-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Enable core dumps
+        uses: senzing-factory/github-action-core-dumps@2-skern
+        with:
+          enable-core-dumps: true
+
+      - name: Intentionally force a segfault
+        run: |
+          cd ${GITHUB_WORKSPACE}/test
+          gcc -g segfault.c -o segfault
+          ./segfault
+
+      - if: ${{ always() }}
+        name: Analyze core dumps
+        uses: senzing-factory/github-action-core-dumps@2-skern
+        with:
+          analyze-core-dumps: true

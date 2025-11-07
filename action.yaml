@@ -1,0 +1,30 @@
+name: Core Dumps
+description: Enable or analyze and upload core dumps.
+author: support@senzing.com
+
+inputs:
+  analyze-core-dumps:
+    description: Run analysis and upload core dump after running build/test.
+  enable-core-dumps:
+    description: Enable core dumps on a system before running build/test.
+
+runs:
+  using: composite
+  steps:
+    - if: runner.os == 'Linux'
+      name: Run on Linux
+      uses: senzing-factory/github-action-core-dumps/linux@2-skern
+      with:
+        analyze-core-dumps: ${{ inputs.analyze-core-dumps }}
+        enable-core-dumps: ${{ inputs.senzingsdk-repository }}
+
+    - if: runner.os == 'macOS'
+      name: Run on macOS
+      uses: senzing-factory/github-action-core-dumps/macos@2-skern
+      with:
+        analyze-core-dumps: ${{ inputs.analyze-core-dumps }}
+        enable-core-dumps: ${{ inputs.senzingsdk-repository-path }}
+
+branding:
+  icon: bug
+  color: green
