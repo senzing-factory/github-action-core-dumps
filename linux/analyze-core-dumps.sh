@@ -105,13 +105,13 @@ if [ -n "$CORE_FILE" ]; then
         -ex "set pagination off" \
         -ex "thread apply all bt full" \
         -ex "info goroutines" \
-        "$EXEC_PATH" "$CORE_FILE" > backtrace.txt 2>&1
+        "$EXEC_PATH" "$CORE_FILE" > backtrace.txt 2>&1 || echo "[WARN] GDB failed with exit code $?"
     
       # Also try using delve if available (Go debugger)
       if command -v dlv &> /dev/null && [ -f "$EXEC_PATH" ]; then
         echo "[INFO] Using delve for enhanced Go analysis"
         printf '%s\n' "goroutines" "bt" "exit" | \
-          dlv core "$EXEC_PATH" "$CORE_FILE" --check-go-version=false >> backtrace.txt 2>&1 || true
+          dlv core "$EXEC_PATH" "$CORE_FILE" --check-go-version=false >> backtrace.txt 2>&1 || echo "[WARN] Delve failed with exit code $?"
       fi
       ;;
     
@@ -126,7 +126,7 @@ if [ -n "$CORE_FILE" ]; then
 
   echo "[INFO] Backtrace analysis complete"
   echo "[INFO] Backtrace output:"
-  cat backtrace.txt
+  cat backtrace.txt || echo "[WARN] No backtrace file generated"
 else
   echo "[INFO] No core dump found"
   echo "[INFO] Checking system limits:"
