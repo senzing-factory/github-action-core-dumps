@@ -18,26 +18,32 @@ if [ -n "$CORE_FILE" ]; then
     echo "[WARN] Could not determine executable from core dump, attempting to extract from core"
   
     # Try to get the executable from the core dump using gdb
-    EXEC_PATH=$(gdb -batch -c "$CORE_FILE" -ex "info proc exe" 2>/dev/null | grep "exe = " | sed "s/.*exe = '\([^']*\)'.*/\1/")
+    EXEC_PATH=$(gdb -batch -c "$CORE_FILE" -ex "info proc exe" 2>/dev/null | grep "exe = " | sed "s/.*exe = '\([^']*\)'.*/\1/" || true)
   
-    # If still not found, try reading from core dump directly
+    # If still not found, try parsing the core file name
     if [ -z "$EXEC_PATH" ] || [ ! -f "$EXEC_PATH" ]; then
-      # Look for common patterns in the core file name
       CORE_NAME=$(basename "$CORE_FILE")
-      if [[ "$CORE_NAME" == *"python"* ]]; then
-        EXEC_PATH=$(which python3 2>/dev/null || which python 2>/dev/null)
-      elif [[ "$CORE_NAME" == core.*.* ]]; then
-        # Extract program name from core.PROGRAM.PID.TIMESTAMP format
-        PROG_NAME=$(echo "$CORE_NAME" | cut -d'.' -f2)
-        EXEC_PATH=$(which "$PROG_NAME" 2>/dev/null)
+      echo "[INFO] Attempting to extract program name from core filename: $CORE_NAME"
+    
+      # Extract program name from core.PROGRAM.PID.TIMESTAMP format
+      if [[ "$CORE_NAME" =~ ^core\.([^.]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+        PROG_NAME="${BASH_REMATCH[1]}"
+        echo "[INFO] Extracted program name: $PROG_NAME"
+      
+        # Try to find the executable
+        if [[ "$PROG_NAME" == "python"* ]] || [[ "$PROG_NAME" == "Python"* ]]; then
+          EXEC_PATH=$(which python3 2>/dev/null || which python 2>/dev/null)
+        elif [[ "$PROG_NAME" == "segfault" ]]; then
+          # Check common locations
+          if [ -f "${GITHUB_WORKSPACE}/test/segfault" ]; then
+            EXEC_PATH="${GITHUB_WORKSPACE}/test/segfault"
+          else
+            EXEC_PATH=$(which segfault 2>/dev/null || echo "")
+          fi
+        else
+          EXEC_PATH=$(which "$PROG_NAME" 2>/dev/null || echo "")
+        fi
       fi
-    fi
-
-    # Special case for Go programs run with 'go run'
-    if [[ "$CORE_NAME" == *"go-build"* ]] || [[ "$CORE_NAME" == *"exe"* ]]; then
-      echo "[INFO] Detected Go temporary executable from 'go run'"
-      EXEC_TYPE="go"
-      # For go run, we can't recover the binary, but we know it's Go
     fi
   
     # Final fallback
@@ -47,13 +53,16 @@ if [ -n "$CORE_FILE" ]; then
     fi
   fi
 
-echo "[INFO] Analyzing core dump with executable: $EXEC_PATH"
+  echo "[INFO] Analyzing core dump with executable: $EXEC_PATH"
 
   # Detect executable type
   EXEC_TYPE="native"
-  if [[ "$EXEC_PATH" == *"python"* ]] || file "$EXEC_PATH" | grep -q "Python"; then
+  if [[ "$EXEC_PATH" == *"python"* ]] || [[ "$EXEC_PATH" == *"Python"* ]] || file "$EXEC_PATH" 2>/dev/null | grep -q "Python"; then
     EXEC_TYPE="python"
-  elif file "$EXEC_PATH" | grep -q "Go "; then
+  elif file "$EXEC_PATH" 2>/dev/null | grep -q "Go "; then
+    EXEC_TYPE="go"
+  # Additional check: if we found segfault and segfault.go exists, it's likely Go
+  elif [[ "$EXEC_PATH" == *"segfault"* ]] && [ -f "${GITHUB_WORKSPACE}/test/segfault.go" ]; then
     EXEC_TYPE="go"
   fi
 
@@ -91,7 +100,7 @@ echo "[INFO] Analyzing core dump with executable: $EXEC_PATH"
         "$EXEC_PATH" "$CORE_FILE" > backtrace.txt 2>&1
     
       # Also try using delve if available (Go debugger)
-      if command -v dlv &> /dev/null; then
+      if command -v dlv &> /dev/null && [ -f "$EXEC_PATH" ]; then
         echo "[INFO] Using delve for enhanced Go analysis"
         printf '%s\n' "goroutines" "bt" "exit" | \
           dlv core "$EXEC_PATH" "$CORE_FILE" --check-go-version=false >> backtrace.txt 2>&1
@@ -108,9 +117,6 @@ echo "[INFO] Analyzing core dump with executable: $EXEC_PATH"
   esac
 
   echo "[INFO] Backtrace analysis complete"
-
-  echo "[INFO] cat backtrace.txt"
-  cat backtrace.txt
 else
   echo "[INFO] No core dump found"
   echo "[INFO] Checking system limits:"

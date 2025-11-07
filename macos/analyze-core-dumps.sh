@@ -10,26 +10,53 @@ if [ -n "$CORE_FILE" ]; then
   echo "[INFO] Found core dump: $CORE_FILE"
   
   # Determine the executable from the core dump
-  EXEC_PATH=$(otool -L "$CORE_FILE" 2>/dev/null | head -2 | tail -1 | awk '{print $1}')
+  # Try to extract from core file name first
+  CORE_NAME=$(basename "$CORE_FILE")
+  EXEC_PATH=""
   
-  # Try to extract executable info from core dump metadata
+  # Extract program name from core.PROGRAM.PID format
+  if [[ "$CORE_NAME" =~ ^core\.([^.]+)\.([0-9]+)$ ]]; then
+    PROG_NAME="${BASH_REMATCH[1]}"
+    echo "[INFO] Extracted program name from core: $PROG_NAME"
+    
+    # Try to find the executable
+    if [[ "$PROG_NAME" == "Python" ]] || [[ "$PROG_NAME" == "python"* ]]; then
+      EXEC_PATH=$(which python3 2>/dev/null || which python 2>/dev/null)
+    elif [[ "$PROG_NAME" == "segfault" ]]; then
+      # Check common locations
+      if [ -f "${GITHUB_WORKSPACE}/test/segfault" ]; then
+        EXEC_PATH="${GITHUB_WORKSPACE}/test/segfault"
+      else
+        EXEC_PATH=$(which segfault 2>/dev/null)
+      fi
+    else
+      EXEC_PATH=$(which "$PROG_NAME" 2>/dev/null)
+    fi
+  fi
+  
+  # Try otool as backup
+  if [ -z "$EXEC_PATH" ] || [ ! -f "$EXEC_PATH" ]; then
+    EXEC_PATH=$(otool -L "$CORE_FILE" 2>/dev/null | head -2 | tail -1 | awk '{print $1}')
+  fi
+  
+  # Final fallback
   if [ -z "$EXEC_PATH" ] || [ ! -f "$EXEC_PATH" ]; then
     echo "[WARN] Could not determine executable from core dump"
-    EXEC_PATH="${GITHUB_WORKSPACE}/test/segfault"  # Fallback for test
+    EXEC_PATH="${GITHUB_WORKSPACE}/test/segfault"
   fi
   
   echo "[INFO] Analyzing core dump with executable: $EXEC_PATH"
   
   # Detect executable type
   EXEC_TYPE="native"
-  if [[ "$EXEC_PATH" == *"python"* ]] || file "$EXEC_PATH" | grep -q "Python"; then
+  if [[ "$EXEC_PATH" == *"python"* ]] || [[ "$EXEC_PATH" == *"Python"* ]] || file "$EXEC_PATH" | grep -q "Python"; then
     EXEC_TYPE="python"
-  elif file "$EXEC_PATH" | grep -q "Go "; then
+  elif file "$EXEC_PATH" | grep -q "Go " || [[ "$PROG_NAME" == "segfault" && -f "${GITHUB_WORKSPACE}/test/segfault.go" ]]; then
     EXEC_TYPE="go"
   fi
-
+  
   echo "[INFO] Detected executable type: $EXEC_TYPE"
-
+  
   # Check if Go is available (needed for go install)
   if command -v go &> /dev/null; then
     if ! command -v dlv &> /dev/null; then
@@ -60,7 +87,7 @@ if [ -n "$CORE_FILE" ]; then
         -o "quit" > backtrace.txt 2>&1
       
       # Also try using delve if available (Go debugger)
-      if command -v dlv &> /dev/null; then
+      if command -v dlv &> /dev/null && [ -f "$EXEC_PATH" ]; then
         echo "[INFO] Using delve for enhanced Go analysis"
         printf '%s\n' "goroutines" "bt" "exit" | \
           dlv core "$EXEC_PATH" "$CORE_FILE" --check-go-version=false >> backtrace.txt 2>&1
