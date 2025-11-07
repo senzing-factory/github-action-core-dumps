@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -ex
+set -e
 
 echo "[INFO] enable linux core dumps"
 # Create core dump directory
@@ -25,6 +25,3 @@ ulimit -a | grep core
 cat /proc/sys/kernel/core_pattern
 
 touch /tmp/core_dump_start_marker
-
-echo 'ulimit -c unlimited' >> ~/.bashrc
-echo "BASH_ENV=$HOME/.bashrc" >> "$GITHUB_ENV"

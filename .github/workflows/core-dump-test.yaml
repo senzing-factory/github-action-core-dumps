@@ -26,7 +26,8 @@ jobs:
 
       - name: Intentionally force a segfault
         run: |
-          ls /tmp
+          # Also set for current session
+          ulimit -c unlimited
           cd "${GITHUB_WORKSPACE}/test"
           gcc -g segfault.c -o segfault
           ./segfault
