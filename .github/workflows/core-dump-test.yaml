@@ -102,6 +102,7 @@ jobs:
           cd "${GITHUB_WORKSPACE}/test"
           # Build the binary first, then run it
           # Build with debug symbols and no optimizations
+          # Build with debug symbols and no optimizations for better debugging
           go build -gcflags='all=-N -l' -o segfault segfault.go
           GOTRACEBACK=crash ./segfault
 
