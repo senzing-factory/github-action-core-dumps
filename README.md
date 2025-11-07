@@ -24,6 +24,8 @@ Currently supports:
 
 ## Usage
 
+[.github/workflows/core-dump-test.yaml]
+
 ```console
 name: core dump test
 
@@ -40,23 +42,27 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+
     steps:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+
       - name: Enable core dumps
-        uses: senzing-factory/github-action-core-dumps@2-skern
+        uses: senzing-factory/github-action-core-dumps@v1
         with:
           enable-core-dumps: "true"
+
       - name: Intentionally force a segfault (C)
         run: |
           ulimit -c unlimited
           cd "${GITHUB_WORKSPACE}/test"
           gcc -g segfault.c -o segfault
           ./segfault
+
       - if: always()
         name: Analyze core dumps
-        uses: senzing-factory/github-action-core-dumps@2-skern
+        uses: senzing-factory/github-action-core-dumps@v1
         with:
           analyze-core-dumps: "true"
           core-file-suffix: c-${{ matrix.os }}
@@ -69,25 +75,28 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+
     steps:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+
       - name: Setup Python
         uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+
       - name: Enable core dumps
-        uses: senzing-factory/github-action-core-dumps@2-skern
+        uses: senzing-factory/github-action-core-dumps@v1
         with:
           enable-core-dumps: "true"
+
       - name: Intentionally force a segfault (Python)
         run: |
           ulimit -c unlimited
           python3 -c "import os, signal; os.kill(os.getpid(), signal.SIGSEGV)"
+
       - if: always()
         name: Analyze core dumps
-        uses: senzing-factory/github-action-core-dumps@2-skern
+        uses: senzing-factory/github-action-core-dumps@v1
         with:
           analyze-core-dumps: "true"
           core-file-suffix: python-${{ matrix.os }}
@@ -100,27 +109,38 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+
     steps:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: "stable"
+
       - name: Enable core dumps
-        uses: senzing-factory/github-action-core-dumps@2-skern
+        uses: senzing-factory/github-action-core-dumps@v1
         with:
           enable-core-dumps: "true"
+
       - name: Intentionally force a segfault (Go)
         run: |
           ulimit -c unlimited
           cd "${GITHUB_WORKSPACE}/test"
-          GOTRACEBACK=crash go run segfault.go
+          # Build the binary first, then run it
+          # Build with debug symbols and no optimizations
+          # Build with debug symbols and no optimizations for better debugging
+          go build -gcflags='all=-N -l' -o segfault segfault.go
+          GOTRACEBACK=crash ./segfault
+
       - if: always()
         name: Analyze core dumps
-        uses: senzing-factory/github-action-core-dumps@2-skern
+        uses: senzing-factory/github-action-core-dumps@v1
         with:
           analyze-core-dumps: "true"
           core-file-suffix: go-${{ matrix.os }}
 ```
+
+[.github/workflows/core-dump-test.yaml]: .github/workflows/core-dump-test.yaml
