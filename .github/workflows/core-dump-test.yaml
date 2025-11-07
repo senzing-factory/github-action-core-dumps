@@ -100,7 +100,9 @@ jobs:
         run: |
           ulimit -c unlimited
           cd "${GITHUB_WORKSPACE}/test"
-          GOTRACEBACK=crash go run segfault.go
+          # Build the binary first, then run it
+          go build -o segfault segfault.go
+          GOTRACEBACK=crash ./segfault
 
       - if: always()
         name: Analyze core dumps

@@ -19,6 +19,7 @@ runs:
       uses: senzing-factory/github-action-core-dumps/linux@2-skern
       with:
         analyze-core-dumps: "${{ inputs.analyze-core-dumps }}"
+        core-file-suffix: "${{ inputs.core-file-suffix }}"
         enable-core-dumps: "${{ inputs.enable-core-dumps }}"
 
     - if: runner.os == 'macOS'
@@ -26,6 +27,7 @@ runs:
       uses: senzing-factory/github-action-core-dumps/macos@2-skern
       with:
         analyze-core-dumps: "${{ inputs.analyze-core-dumps }}"
+        core-file-suffix: "${{ inputs.core-file-suffix }}"
         enable-core-dumps: "${{ inputs.enable-core-dumps }}"
 
 branding:
