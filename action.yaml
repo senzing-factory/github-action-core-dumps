@@ -6,9 +6,8 @@ inputs:
   analyze-core-dumps:
     description: Run analysis and upload core dump after running build/test.
   core-file-suffix:
-    description: Suffix for core dump artifact names
+    description: Suffix for core dump artifact names. Used with analyze only.
     required: false
-    default: runner.os
   enable-core-dumps:
     description: Enable core dumps on a system before running build/test.
 

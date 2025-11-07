@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
+ls -ltc /cores
+
 # Find core dump
 CORE_FILE=$(find /cores -maxdepth 1 -type f -regex '.*/core\.[^.]+\.[0-9]+' -newer /tmp/core_dump_start_marker 2>/dev/null)
 

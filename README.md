@@ -50,4 +50,5 @@ jobs:
         uses: senzing-factory/github-action-core-dumps@v1
         with:
           analyze-core-dumps: "true"
+          core-file-suffix: ${{ matrix.os }}
 ```
