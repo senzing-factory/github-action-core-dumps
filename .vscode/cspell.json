@@ -12,6 +12,7 @@
     "dockerhub",
     "dorny",
     "esac",
+    "gcflags",
     "getpid",
     "ghaction",
     "gofmt",

@@ -101,7 +101,8 @@ jobs:
           ulimit -c unlimited
           cd "${GITHUB_WORKSPACE}/test"
           # Build the binary first, then run it
-          go build -o segfault segfault.go
+          # Build with debug symbols and no optimizations
+          go build -gcflags='all=-N -l' -o segfault segfault.go
           GOTRACEBACK=crash ./segfault
 
       - if: always()

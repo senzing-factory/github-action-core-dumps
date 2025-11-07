@@ -100,18 +100,34 @@ if [ -n "$CORE_FILE" ]; then
     
     go)
       echo "[INFO] Go crash detected, using Go-specific analysis"
-      # Go binaries have runtime info built-in
-      gdb -batch \
+    
+      # Try standard GDB backtrace (works even without Go-specific support)
+      if gdb -batch \
         -ex "set pagination off" \
         -ex "thread apply all bt full" \
+        "$EXEC_PATH" "$CORE_FILE" > backtrace.txt 2>&1; then
+        echo "[INFO] GDB standard backtrace completed successfully"
+      else
+        echo "[WARN] GDB standard backtrace failed with exit code $?"
+      fi
+    
+      # Try Go-specific GDB commands (may not be supported)
+      echo "[INFO] Attempting Go-specific GDB analysis (may not be supported)"
+      gdb -batch \
+        -ex "set pagination off" \
         -ex "info goroutines" \
-        "$EXEC_PATH" "$CORE_FILE" > backtrace.txt 2>&1 || echo "[WARN] GDB failed with exit code $?"
+        "$EXEC_PATH" "$CORE_FILE" >> backtrace.txt 2>&1 || echo "[INFO] GDB Go extensions not available (this is normal)"
     
       # Also try using delve if available (Go debugger)
       if command -v dlv &> /dev/null && [ -f "$EXEC_PATH" ]; then
         echo "[INFO] Using delve for enhanced Go analysis"
-        printf '%s\n' "goroutines" "bt" "exit" | \
-          dlv core "$EXEC_PATH" "$CORE_FILE" --check-go-version=false >> backtrace.txt 2>&1 || echo "[WARN] Delve failed with exit code $?"
+        echo "=== Delve Analysis ===" >> backtrace.txt
+        if printf '%s\n' "goroutines" "bt" "exit" | \
+          dlv core "$EXEC_PATH" "$CORE_FILE" --check-go-version=false >> backtrace.txt 2>&1; then
+          echo "[INFO] Delve analysis completed successfully"
+        else
+          echo "[INFO] Delve analysis failed (binary may need to be compiled with: go build -gcflags='all=-N -l')"
+        fi
       fi
       ;;
     
