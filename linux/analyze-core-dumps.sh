@@ -1,3 +1,7 @@
+# ============================================================================
+# macOS analyze-core-dumps.sh
+# ============================================================================
+
 #!/usr/bin/env bash
 set -e
 
@@ -6,7 +10,7 @@ sudo apt-get -qq update
 sudo apt-get install -yqq python3-dbg gdb
 
 # Find core dump
-CORE_FILE=$(find /tmp/coredumps -maxdepth 1 -type f -regex '.*/core\.[^.]+\.[0-9]+\.[0-9]+' -newer /tmp/core_dump_start_marker)
+CORE_FILE=$(find /tmp/coredumps -maxdepth 1 -type f -regex '.*/core\.[^.]+\.[0-9]+\.[0-9]+' -newer /tmp/core_dump_start_marker 2>/dev/null | head -n 1)
 
 if [ -n "$CORE_FILE" ]; then
   echo "[INFO] Found core dump: $CORE_FILE"
@@ -33,6 +37,10 @@ if [ -n "$CORE_FILE" ]; then
         # Try to find the executable
         if [[ "$PROG_NAME" == "python"* ]] || [[ "$PROG_NAME" == "Python"* ]]; then
           EXEC_PATH=$(which python3 2>/dev/null || which python 2>/dev/null)
+        elif [[ "$PROG_NAME" == "pytest" ]] || [[ "$PROG_NAME" == "py.test" ]]; then
+          # pytest is a Python wrapper, get the actual Python interpreter
+          EXEC_PATH=$(which python3 2>/dev/null || which python 2>/dev/null)
+          echo "[INFO] Detected pytest wrapper, using Python interpreter: $EXEC_PATH"
         elif [[ "$PROG_NAME" == "segfault" ]]; then
           # Check common locations
           if [ -f "${GITHUB_WORKSPACE}/test/segfault" ]; then
@@ -60,15 +68,27 @@ if [ -n "$CORE_FILE" ]; then
   if [[ "$EXEC_PATH" == *"python"* ]] || [[ "$EXEC_PATH" == *"Python"* ]]; then
     EXEC_TYPE="python"
   elif [ -f "$EXEC_PATH" ]; then
-    # Check the actual binary contents
-    FILE_OUTPUT=$(file "$EXEC_PATH" 2>/dev/null)
-    if echo "$FILE_OUTPUT" | grep -q "Python"; then
+    # Check if it's a Python script wrapper
+    if head -n 1 "$EXEC_PATH" 2>/dev/null | grep -q "^#!.*python"; then
+      echo "[INFO] Detected Python wrapper script"
       EXEC_TYPE="python"
-    elif echo "$FILE_OUTPUT" | grep -q "Go "; then
-      EXEC_TYPE="go"
-    # Check for Go-specific strings in the binary
-    elif strings "$EXEC_PATH" 2>/dev/null | grep -q "^go1\.[0-9]"; then
-      EXEC_TYPE="go"
+      # Replace with actual Python interpreter if we have a script
+      ACTUAL_PYTHON=$(which python3 2>/dev/null || which python 2>/dev/null)
+      if [ -n "$ACTUAL_PYTHON" ]; then
+        echo "[INFO] Using Python interpreter: $ACTUAL_PYTHON"
+        EXEC_PATH="$ACTUAL_PYTHON"
+      fi
+    else
+      # Check the actual binary contents
+      FILE_OUTPUT=$(file "$EXEC_PATH" 2>/dev/null)
+      if echo "$FILE_OUTPUT" | grep -q "Python"; then
+        EXEC_TYPE="python"
+      elif echo "$FILE_OUTPUT" | grep -q "Go "; then
+        EXEC_TYPE="go"
+      # Check for Go-specific strings in the binary
+      elif strings "$EXEC_PATH" 2>/dev/null | grep -q "^go1\.[0-9]"; then
+        EXEC_TYPE="go"
+      fi
     fi
   fi
 
@@ -95,7 +115,7 @@ if [ -n "$CORE_FILE" ]; then
         -ex "set pagination off" \
         -ex "thread apply all bt full" \
         -ex "thread apply all py-bt" \
-        "$EXEC_PATH" "$CORE_FILE" > backtrace.txt 2>&1
+        "$EXEC_PATH" "$CORE_FILE" > backtrace.txt 2>&1 || echo "[WARN] GDB failed with exit code $?"
       ;;
     
     go)
@@ -136,7 +156,7 @@ if [ -n "$CORE_FILE" ]; then
       gdb -batch \
         -ex "set pagination off" \
         -ex "thread apply all bt full" \
-        "$EXEC_PATH" "$CORE_FILE" > backtrace.txt 2>&1
+        "$EXEC_PATH" "$CORE_FILE" > backtrace.txt 2>&1 || echo "[WARN] GDB failed with exit code $?"
       ;;
   esac
 
