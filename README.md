@@ -39,7 +39,7 @@ jobs:
       - name: Enable core dumps
         uses: senzing-factory/github-action-core-dumps@v1
         with:
-          enable-core-dumps: true
+          enable-core-dumps: "true"
 
       - name: Run pytest
         run: |
@@ -49,5 +49,5 @@ jobs:
         name: Analyze core dumps
         uses: senzing-factory/github-action-core-dumps@v1
         with:
-          analyze-core-dumps: true
+          analyze-core-dumps: "true"
 ```
