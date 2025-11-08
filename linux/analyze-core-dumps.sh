@@ -1,8 +1,7 @@
+#!/usr/bin/env bash
 # ============================================================================
 # macOS analyze-core-dumps.sh
 # ============================================================================
-
-#!/usr/bin/env bash
 set -e
 
 # Install Python debug symbols and GDB
