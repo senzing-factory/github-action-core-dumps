@@ -1,2 +1,2 @@
- # .clang-format
-SpacesBeforeTrailingComments: 1 # Or whatever number cpplint
+# .clang-format
+SpacesBeforeTrailingComments: 2 # Or whatever number cpplint

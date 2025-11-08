@@ -43,7 +43,5 @@
     "venv",
     "vladopajic"
   ],
-  "ignorePaths": [
-    ".git/**"
-  ]
+  "ignorePaths": [".git/**"]
 }
