@@ -9,6 +9,7 @@
     "coredump",
     "coredumps",
     "corefile",
+    "cpplint",
     "dockerhub",
     "dorny",
     "esac",
@@ -42,5 +43,7 @@
     "venv",
     "vladopajic"
   ],
-  "ignorePaths": [".git/**"]
+  "ignorePaths": [
+    ".git/**"
+  ]
 }
