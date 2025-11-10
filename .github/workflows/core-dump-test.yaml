@@ -1,6 +1,6 @@
 name: core dump test
 
-on: [push]
+on: [workflow_dispatch]
 
 permissions: {}
 

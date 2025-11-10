@@ -4,6 +4,6 @@
 int main() {
   int *ptr = NULL;
   printf("About to segfault...\n");
-  *ptr = 42;  // Dereference NULL pointer
+  *ptr = 42;
   return 0;
 }
