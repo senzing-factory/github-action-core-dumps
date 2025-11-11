@@ -53,7 +53,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
 
       - name: Enable core dumps
         uses: senzing-factory/github-action-core-dumps@v1
