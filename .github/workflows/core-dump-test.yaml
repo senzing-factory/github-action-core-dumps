@@ -1,9 +1,6 @@
 name: core dump test
-
 on: [workflow_dispatch]
-
 permissions: {}
-
 jobs:
   core-dump-test-c:
     runs-on: ${{ matrix.os }}
@@ -12,8 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
-
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v5
         with:
@@ -24,12 +20,25 @@ jobs:
         with:
           enable-core-dumps: "true"
 
-      - name: Intentionally force a segfault (C)
+      # Windows needs different commands
+      - if: runner.os == 'Windows'
+        name: Intentionally force a segfault (C) - Windows
+        shell: cmd
+        run: |
+          cd "%GITHUB_WORKSPACE%\test"
+          cl /Zi segfault.c /Fe:segfault.exe
+          segfault.exe
+        continue-on-error: true
+
+      # Unix (Linux/macOS)
+      - if: runner.os != 'Windows'
+        name: Intentionally force a segfault (C) - Unix
         run: |
           ulimit -c unlimited
           cd "${GITHUB_WORKSPACE}/test"
           gcc -g segfault.c -o segfault
           ./segfault
+        continue-on-error: true
 
       - if: always()
         name: Analyze core dumps
@@ -45,8 +54,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
-
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v5
         with:
@@ -60,10 +68,20 @@ jobs:
         with:
           enable-core-dumps: "true"
 
-      - name: Intentionally force a segfault (Python)
+      # Windows Python crash
+      - if: runner.os == 'Windows'
+        name: Intentionally force a segfault (Python) - Windows
+        shell: powershell
+        run: python -c "import ctypes; ctypes.string_at(0)"
+        continue-on-error: true
+
+      # Unix Python crash
+      - if: runner.os != 'Windows'
+        name: Intentionally force a segfault (Python) - Unix
         run: |
           ulimit -c unlimited
           python3 -c "import os, signal; os.kill(os.getpid(), signal.SIGSEGV)"
+        continue-on-error: true
 
       - if: always()
         name: Analyze core dumps
@@ -79,8 +97,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
-
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v5
         with:
@@ -96,15 +113,26 @@ jobs:
         with:
           enable-core-dumps: "true"
 
-      - name: Intentionally force a segfault (Go)
+      # Windows Go crash
+      - if: runner.os == 'Windows'
+        name: Intentionally force a segfault (Go) - Windows
+        shell: powershell
+        run: |
+          cd "$env:GITHUB_WORKSPACE\test"
+          go build -gcflags='all=-N -l' -o segfault.exe segfault.go
+          $env:GOTRACEBACK = "crash"
+          .\segfault.exe
+        continue-on-error: true
+
+      # Unix Go crash
+      - if: runner.os != 'Windows'
+        name: Intentionally force a segfault (Go) - Unix
         run: |
           ulimit -c unlimited
           cd "${GITHUB_WORKSPACE}/test"
-          # Build the binary first, then run it
-          # Build with debug symbols and no optimizations
-          # Build with debug symbols and no optimizations for better debugging
           go build -gcflags='all=-N -l' -o segfault segfault.go
           GOTRACEBACK=crash ./segfault
+        continue-on-error: true
 
       - if: always()
         name: Analyze core dumps

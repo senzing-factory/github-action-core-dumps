@@ -1,0 +1,44 @@
+name: Core Dumps - windows
+description: Enable or analyze and upload core dumps on the windows platform.
+author: support@senzing.com
+
+inputs:
+  analyze-core-dumps:
+    description: Run analysis and upload core dump after running build/test.
+  core-file-suffix:
+    description: Suffix for core dump artifact names
+  enable-core-dumps:
+    description: Enable core dumps on a system before running build/test.
+
+runs:
+  using: composite
+  steps:
+    # Install staging, production or versioned release.
+    - env:
+        ENABLE_CORE_DUMPS: ${{ inputs.enable-core-dumps }}
+      if: ${{ inputs.enable-core-dumps  == 'true' }}
+      name: Enable Core Dumps
+      shell: powershell
+      run: |
+        & "${{ github.action_path }}\windows\enable.ps1"
+
+    - env:
+        ANALYZE_CORE_DUMPS: ${{ inputs.analyze-core-dumps }}
+      if: ${{ always() && inputs.analyze-core-dumps == 'true' }}
+      name: Analyze Core Dumps
+      shell: powershell
+      run: |
+        & "${{ github.action_path }}\windows\analyze.ps1" -suffix "${{ inputs.core-file-suffix }}"
+
+    - if: ${{ always() && inputs.analyze-core-dumps == 'true' }}
+      name: Upload Core Dumps
+      uses: actions/upload-artifact@v4
+      with:
+        if-no-files-found: ignore
+        name: core-dump-analysis-${{ inputs.core-file-suffix }}
+        path: |
+          ${{ github.workspace }}/crash-analysis/
+
+branding:
+  icon: bug
+  color: green

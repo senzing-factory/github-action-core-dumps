@@ -30,6 +30,14 @@ runs:
         core-file-suffix: "${{ inputs.core-file-suffix }}"
         enable-core-dumps: "${{ inputs.enable-core-dumps }}"
 
+    - if: runner.os == 'Windows'
+      name: Run on Windows
+      uses: senzing-factory/github-action-core-dumps/windows@v1
+      with:
+        analyze-core-dumps: "${{ inputs.analyze-core-dumps }}"
+        core-file-suffix: "${{ inputs.core-file-suffix }}"
+        enable-core-dumps: "${{ inputs.enable-core-dumps }}"
+
 branding:
   icon: bug
   color: green
