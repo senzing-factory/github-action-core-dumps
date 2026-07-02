@@ -12,7 +12,6 @@ jobs:
     permissions:
       repository-projects: write
     secrets:
-      PROJECT_RW_TOKEN: ${{ secrets.SENZING_GITHUB_PROJECT_RW_TOKEN }}
       APP_CLIENT_ID: ${{ secrets.SENZING_GITHUB_PROJECT_APP_CLIENT_ID }}
       APP_PRIVATE_KEY: ${{ secrets.SENZING_GITHUB_PROJECT_APP_PRIVATE_KEY }}
     uses: senzing-factory/build-resources/.github/workflows/move-pr-to-done-dependabot.yaml@v4
